@@ -1,0 +1,12 @@
+# 字体 / 图片缓存
+_image_cache/
+__pycache__/
+*.pyc
+.DS_Store
+.env
+
+# 本地原始 xlsx (大文件; 不进库, 用 data/products.csv 作为源)
+*.xlsx
+
+# Streamlit 自身缓存
+.streamlit/cache/
