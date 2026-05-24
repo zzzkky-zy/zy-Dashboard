@@ -14,6 +14,7 @@ from data_loader import (
     EXCEL_PATH,
     CSV_PATH,
     EFFICACY_GROUPS,
+    attach_image_uris,
     explode_words,
     file_signature,
     load_workbook,
@@ -25,6 +26,19 @@ from hover_image import plot_with_image_hover
 from wc_render import make_wordcloud, make_dual_wordcloud
 
 st.set_page_config(page_title="产品调研看板", page_icon="📊", layout="wide")
+
+# ---- 隐藏 Streamlit 自带的页脚/菜单/Deploy 按钮 ----
+st.markdown("""
+<style>
+#MainMenu {visibility: hidden;}
+header [data-testid="stToolbar"] {visibility: hidden;}
+footer {visibility: hidden;}
+.stDeployButton {display: none !important;}
+.viewerBadge_container__1QSob, .styles_viewerBadge__1yB5_ {display: none !important;}
+[data-testid="manage-app-button"] {display: none !important;}
+[data-testid="stStatusWidget"] {visibility: hidden;}
+</style>
+""", unsafe_allow_html=True)
 
 # ---- 数据加载 ---------------------------------------------------------------
 @st.cache_data(show_spinner="加载数据中…")
@@ -194,6 +208,7 @@ with sections[0]:
     if s1.empty:
         st.info("当前筛选下无散点数据。")
     else:
+        s1 = attach_image_uris(s1)  # 按需加载本图所需包装图
         sizeref = _bubble_sizeref(s1[sales_channel].values, max_px=46)
         # 显式调色板, 保证 18+ 品牌都能拿到差异化颜色
         palette = (
@@ -741,9 +756,12 @@ with sections[3]:
             format_func=lambda i: labels[i],
         )
         chosen = pool.iloc[idx]
+        # 仅给被选中的这一行 lazy 加载包装图, 避免列表加载时全量转base64
+        single_with_img = attach_image_uris(pool.iloc[[idx]])
+        chosen_img_uri = single_with_img.iloc[0]["包装图URI"] if len(single_with_img) else ""
         pitch = str(chosen["一句话卖点"]) if pd.notna(chosen["一句话卖点"]) else ""
         review = str(chosen["小红书用户评价"]) if pd.notna(chosen["小红书用户评价"]) else ""
-        uri = chosen.get("包装图URI", "")
+        uri = chosen_img_uri
 
         cleft, cmid, cright = st.columns([1, 1.4, 2.2])
         with cleft:

@@ -135,6 +135,18 @@ def _img_to_data_uri(filename: str) -> str:
     return f"data:{mime};base64,{base64.b64encode(p.read_bytes()).decode()}"
 
 
+def attach_image_uris(df: pd.DataFrame) -> pd.DataFrame:
+    """按需把 包装图文件名 转成 data URI; 复制 df, 不影响缓存."""
+    if "包装图URI" in df.columns and df["包装图URI"].astype(bool).any():
+        return df
+    out = df.copy()
+    if "包装图文件名" in out.columns:
+        out["包装图URI"] = out["包装图文件名"].fillna("").astype(str).map(_img_to_data_uri)
+    else:
+        out["包装图URI"] = ""
+    return out
+
+
 def _enrich(full: pd.DataFrame) -> pd.DataFrame:
     """对原始 DF (csv 或 xlsx 拍平后的格式) 做派生列计算."""
     full["天猫销量"] = full.get("天猫销量原始", pd.Series(index=full.index)).map(_parse_sales)
@@ -158,10 +170,8 @@ def _enrich(full: pd.DataFrame) -> pd.DataFrame:
     full["品牌"] = full["品牌"].fillna("未知").astype(str).str.strip().replace({"": "未知"})
     full["产品"] = full["产品"].fillna("").astype(str).str.strip()
 
-    full["包装图URI"] = (
-        full["包装图文件名"].fillna("").astype(str).map(_img_to_data_uri)
-        if "包装图文件名" in full else ""
-    )
+    # 注意: 包装图URI 不在此处生成 (开销大), 改为调用方按需 attach_image_uris()
+    full["包装图URI"] = ""
     return full
 
 
